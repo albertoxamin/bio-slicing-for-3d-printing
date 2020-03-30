@@ -26,7 +26,11 @@ def main(prng=None, display=False):
         prng = Random()
         prng.seed(time())
     problem = Slicing(stl_file='models/pole.stl')
-    print(f'No evolution individual with [0, 0, 0, 0.2] has a fitness of {problem.slice_and_get_fit([0, 0, 0, 0.2])}')
+    print("These are the default fitnesses without evolution, that equal to placing the object in the build plate and slicing it with basic rotations")
+    print(f'[0, 0, 0, 0.2] has a cost of {problem.slice_and_get_fit( [0, 0, 0, 0.2, 0]):.3} €')
+    print(f'[90, 0, 0, 0.2] has a cost of {problem.slice_and_get_fit([90, 0, 0, 0.2, 0]):.3} €')
+    print(f'[0, 90, 0, 0.2] has a cost of {problem.slice_and_get_fit([0, 90, 0, 0.2, 0]):.3} €')
+    print(f'[0, 0, 90, 0.2] has a cost of {problem.slice_and_get_fit([0, 0, 90, 0.2, 0]):.3} €')
     if algorithm == 'ga':
         ea = inspyred.ec.GA(prng)
         ea.terminator = [inspyred.ec.terminators.evaluation_termination, inspyred.ec.terminators.diversity_termination]
