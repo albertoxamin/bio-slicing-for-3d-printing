@@ -25,7 +25,7 @@ class SlicingBounder(object):
             elif i == 3:
                 candidate[i] = closest(layer_heights, c)
             elif i == 4:
-                candidate[i] = round(c)
+                candidate[i] = min(round(c), len(patterns) - 1)
         return candidate
 
 
@@ -78,7 +78,7 @@ class Slicing:
 
         cat = f"cat gcodes/{name}.gcode | sed -n -e '/M84/,$p' | sed -e '/avoid/,$d'"
         candidate = f"--rotate {str(cs[0])} --rotate-x {str(cs[1])} --rotate-y {str(cs[2])} --layer-height {str(cs[3])} --fill-pattern {patterns[cs[4]]}"
-        command = f"{self.slic3r_path} {self.stl_file} --gcode {candidate} --align-xy 0,0 --load '{self.ini_file}' -o ./gcodes/{name}.gcode && {cat}"
+        command = f"{self.slic3r_path} {self.stl_file} --gcode {candidate} --center 0,0 --align-xy 0,0 --load '{self.ini_file}' -o ./gcodes/{name}.gcode && {cat}"
         try:
             output = subprocess.check_output(
                 command, shell=True, executable='/bin/bash', universal_newlines=True, stderr=subprocess.DEVNULL)
