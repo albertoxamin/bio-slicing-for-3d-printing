@@ -1,4 +1,3 @@
-import math
 import re
 import subprocess
 import time
@@ -10,7 +9,7 @@ from inspyred.ec.variators import mutator
 from pylab import *
 
 added_hardcoded = 0
-hardcoded = [[0, 0, 0], [90, 0, 0], [0, 90, 0], [0, 0, 90]]
+hardcoded = [[0, 0, 0, 0.2, 0], [90, 0, 0, 0.2, 0], [0, 90, 0, 0.2, 0], [0, 0, 90, 0.2, 0], [180, 0, 0, 0.2, 0], [0, 180, 0, 0.2, 0], [0, 0, 180, 0.2, 0]]
 layer_heights = [0.12, 0.16, 0.2, 0.24, 0.28]
 patterns = ['stars', 'concentric', 'honeycomb', '3dhoneycomb', 'gyroid', 'rectilinear',
             'grid', 'triangles', 'cubic', 'hilbertcurve', 'archimedeanchords', 'octagramspiral']
@@ -26,7 +25,7 @@ class SlicingBounder(object):
                 candidate[i] = closest(layer_heights, c)
             elif i == 4:
                 candidate[i] = min(round(c), len(patterns) - 1)
-        return candidate
+        return candidate[:5]
 
 
 @mutator
@@ -49,11 +48,7 @@ def slicing_mutation(random, candidate, args):
 class Slicing:
 
     def generator(self, random, args):
-        global added_hardcoded
         individual = [random.uniform(0, 360) for i in range(3)]
-        if added_hardcoded < len(hardcoded):
-            individual = hardcoded[added_hardcoded]
-            added_hardcoded = added_hardcoded + 1
         individual.append(random.choice(layer_heights))
         individual.append(random.randint(0, len(patterns) - 1))
         # an individual is an array of [rot_z, rot_x, rot_y, layer_height, infill_pattern]
@@ -64,7 +59,7 @@ class Slicing:
         printing_time_match = re.findall(
             r"(\d*)h{0,1} (\d+)m (\d+)s", gcode_str)
         if len(printing_time_match) == 0:  # printning time unavailable
-            return math.inf
+            return np.iinfo(np.int32).max
         printing_time_match = printing_time_match[0]
         printing_time_match = np.array(printing_time_match)
         printing_time_match[printing_time_match == ''] = 0
@@ -77,6 +72,9 @@ class Slicing:
             name = str(id(cs))
 
         cat = f"cat gcodes/{name}.gcode | sed -n -e '/M84/,$p' | sed -e '/avoid/,$d'"
+        if len(cs) != 5:
+            print("THATS ILLEGAL:")
+            print(cs)
         candidate = f"--rotate {str(cs[0])} --rotate-x {str(cs[1])} --rotate-y {str(cs[2])} --layer-height {str(cs[3])} --fill-pattern {patterns[cs[4]]}"
         command = f"{self.slic3r_path} {self.stl_file} --gcode {candidate} --center 0,0 --align-xy 0,0 --load '{self.ini_file}' -o ./gcodes/{name}.gcode && {cat}"
         try:
@@ -86,16 +84,17 @@ class Slicing:
                 return self.parse_gcode(output)
             else:
                 print("File not found")
-                return math.inf
+                return np.iinfo(np.int32).max
         except subprocess.CalledProcessError as slicingException:
             print("Unprintable")
-            return math.inf
+            return np.iinfo(np.int32).max
 
     def __init__(self, constrained=False,
                  slic3r_path='/Applications/PrusaSlicer.app/Contents/MacOS/PrusaSlicer',
                  stl_file='models/pikachu.stl',
                  ini_file='/Users/alberto/Library/Application Support/PrusaSlicer/print/Anet A8.ini',
                  filament_kg_cost=14, kw_cost=0.052):
+        print(f'Slicing {stl_file}')
         self.maximize = False
         self.constrained = constrained
         self.bounder = SlicingBounder()
