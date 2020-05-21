@@ -22,9 +22,9 @@ def evolve(algorithm, problem, seeds, prng):
         ea = inspyred.ec.GA(prng)
     elif algorithm == 'eda':
         ea = inspyred.ec.EDA(prng)
-        # evolve_args['num_selected'] = 3
-        # evolve_args['num_offspring'] = 30,
-        # evolve_args['num_elites'] = 3
+        evolve_args['num_selected'] = 3
+        evolve_args['num_offspring'] = 30,
+        evolve_args['num_elites'] = 3
     if algorithm != 'none':
         ea.terminator = [inspyred.ec.terminators.evaluation_termination,
                         inspyred.ec.terminators.diversity_termination]

@@ -9,7 +9,7 @@ from inspyred.ec.variators import mutator
 from pylab import *
 
 added_hardcoded = 0
-hardcoded = [[0, 0, 0, 0.2, 0], [90, 0, 0, 0.2, 0], [0, 90, 0, 0.2, 0], [0, 0, 90, 0.2, 0], [180, 0, 0, 0.2, 0], [0, 180, 0, 0.2, 0], [0, 0, 180, 0.2, 0]]
+hardcoded = [[0, 0, 0, 0.2, 0, 1], [90, 0, 0, 0.2, 0, 1], [0, 90, 0, 0.2, 0, 1], [0, 0, 90, 0.2, 0, 1], [180, 0, 0, 0.2, 0, 1], [0, 180, 0, 0.2, 0, 1], [0, 0, 180, 0.2, 0, 1]]
 layer_heights = [0.12, 0.16, 0.2, 0.24, 0.28]
 patterns = ['stars', 'concentric', 'honeycomb', '3dhoneycomb', 'gyroid', 'rectilinear',
             'grid', 'triangles', 'cubic', 'hilbertcurve', 'archimedeanchords', 'octagramspiral']
@@ -25,7 +25,9 @@ class SlicingBounder(object):
                 candidate[i] = closest(layer_heights, c)
             elif i == 4:
                 candidate[i] = min(round(c), len(patterns) - 1)
-        return candidate[:5]
+            elif i == 5:
+                candidate[i] = round(max(1, candidate[i]))
+        return candidate[:6]
 
 
 @mutator
@@ -41,6 +43,8 @@ def slicing_mutation(random, candidate, args):
                 mutant[i] = random.choice(layer_heights)
             elif i == 4:
                 mutant[i] = random.randint(0, len(patterns) - 1)
+            elif i == 5:
+                mutant[i] += random.randint(-2, +2)
     mutant = bounder(mutant, args)
     return mutant
 
@@ -51,7 +55,8 @@ class Slicing:
         individual = [random.uniform(0, 360) for i in range(3)]
         individual.append(random.choice(layer_heights))
         individual.append(random.randint(0, len(patterns) - 1))
-        # an individual is an array of [rot_z, rot_x, rot_y, layer_height, infill_pattern]
+        individual.append(random.randint(1, 3))
+        # an individual is an array of [rot_z, rot_x, rot_y, layer_height, infill_pattern, copies]
         return individual
 
     def parse_gcode(self, gcode_str):
@@ -72,16 +77,16 @@ class Slicing:
             name = str(id(cs))
 
         cat = f"cat gcodes/{name}.gcode | sed -n -e '/M84/,$p' | sed -e '/avoid/,$d'"
-        if len(cs) != 5:
+        if len(cs) != 6:
             print("THATS ILLEGAL:")
             print(cs)
-        candidate = f"--rotate {str(cs[0])} --rotate-x {str(cs[1])} --rotate-y {str(cs[2])} --layer-height {str(cs[3])} --fill-pattern {patterns[cs[4]]}"
+        candidate = f"--rotate {str(cs[0])} --rotate-x {str(cs[1])} --rotate-y {str(cs[2])} --layer-height {str(cs[3])} --fill-pattern {patterns[cs[4]]} --duplicate {str(cs[5])}"
         command = f"{self.slic3r_path} {self.stl_file} --gcode {candidate} --center 0,0 --align-xy 0,0 --load '{self.ini_file}' -o ./gcodes/{name}.gcode && {cat}"
         try:
             output = subprocess.check_output(
                 command, shell=True, executable='/bin/bash', universal_newlines=True, stderr=subprocess.DEVNULL)
             if len(re.findall(r"[0-9]+\.[0-9]+", output)) > 0 and len(re.findall(r"(\d*)h{0,1} (\d+)m (\d+)s", output)) > 0:
-                return self.parse_gcode(output)
+                return self.parse_gcode(output)/cs[5]
             else:
                 print("File not found")
                 return np.iinfo(np.int32).max

@@ -50,7 +50,7 @@ def main(prng=None, display=False):
             # print(f'{c} has a cost of {problem.slice_and_get_fit(c):.3} €')
             best_human = min(best_human, problem.slice_and_get_fit(c))
         final_pops_fit = []
-        algorithms = ['ga', 'eda']
+        algorithms = ['ga']
         for algorithm in algorithms:
             best_fitnesses = []
             for i in range(5):
@@ -61,7 +61,7 @@ def main(prng=None, display=False):
                 problem.slice_and_get_fit(min(final_pop).candidate, f'best_{model}_{algorithm}_{i}')
                 with open('summary.csv', 'a', newline='') as file:
                     writer = csv.writer(file)
-                    writer.writerow([model, algorithm, best_human, stats['best'], 1 - stats['best'] / best_human])
+                    writer.writerow([model, algorithm, best_human, stats['best'], 1 - stats['best'] / best_human, min(final_pop).candidate])
             # final_pops_fit.append(best_fitnesses)
             # if display:
             #     results.append()
