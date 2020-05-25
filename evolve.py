@@ -13,6 +13,7 @@ def evolve(algorithm, problem, seeds, prng, model="", appendix=""):
         'statistics_file': open(f"summaries/stats_{model}_{algorithm}{appendix}.csv", "w"),
         'individuals_file': open(f"summaries/inds_{model}_{algorithm}{appendix}.csv", "w"),
         'bounder': problem.bounder,
+        'num_elites': 1,
         'max_evaluations': 300,
         'seeds': seeds
     }

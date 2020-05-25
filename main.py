@@ -37,24 +37,22 @@ def main(prng=None, display=False):
         writer = csv.writer(file)
         writer.writerow(['model', 'algorithm','best_human', 'best_evolved', 'decrease', 'genome'])
     for model in models:
-        if model == 'pikachu.stl':
-            continue
         problem = Slicing(stl_file=f'models/{model}')
         best_human = 9999
         for c in hardcoded:
             best_human = min(best_human, problem.slice_and_get_fit(c))
         algorithms = ['ga', 'eda', 'es']
         for algorithm in algorithms:
-            best_fitnesses = []
             for i in range(5):
                 final_pop = evolve(algorithm, problem, hardcoded, prng, model=model, appendix=f"_{i}")
                 print(f'{algorithm} run {i} completed')
                 stats = inspyred.ec.analysis.fitness_statistics(final_pop)
-                best_fitnesses.append(1 - stats['best'] / best_human)
-                problem.slice_and_get_fit(min(final_pop).candidate, f'best_{model}_{algorithm}_{i}')
+                final_pop.sort(reverse=True)
+                best = final_pop[0]
+                problem.slice_and_get_fit(best.candidate, f'best_{model}_{algorithm}_{i}')
                 with open('summaries/summary.csv', 'a', newline='') as file:
                     writer = csv.writer(file)
-                    writer.writerow([model, algorithm, best_human, stats['best'], 1 - stats['best'] / best_human, min(final_pop).candidate])
+                    writer.writerow([model, algorithm, best_human, best.fitness, 1 - best.fitness / best_human, best.candidate])
                 generation_plot(open(f"summaries/stats_{model}_{algorithm}_{i}.csv", "r"), algorithm=f"{model}_{algorithm}_{i}")
 
 
