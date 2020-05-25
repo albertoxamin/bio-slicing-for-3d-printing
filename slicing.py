@@ -3,7 +3,6 @@ import subprocess
 import time
 import traceback
 
-import inspyred
 import numpy as np
 from inspyred.ec.variators import mutator
 from pylab import *
@@ -24,7 +23,7 @@ class SlicingBounder(object):
             elif i == 3:
                 candidate[i] = closest(layer_heights, c)
             elif i == 4:
-                candidate[i] = min(round(c), len(patterns) - 1)
+                candidate[i] = max(0, min(round(c), len(patterns) - 1))
             elif i == 5:
                 candidate[i] = round(max(1, candidate[i]))
         return candidate[:6]
@@ -55,7 +54,10 @@ class Slicing:
         individual = [random.uniform(0, 360) for i in range(3)]
         individual.append(random.choice(layer_heights))
         individual.append(random.randint(0, len(patterns) - 1))
-        individual.append(random.randint(1, 3))
+        if not self.block_duplicates:
+            individual.append(random.randint(1, 3))
+        else:
+            individual.append(1)
         # an individual is an array of [rot_z, rot_x, rot_y, layer_height, infill_pattern, copies]
         return individual
 
@@ -77,10 +79,11 @@ class Slicing:
             name = str(id(cs))
 
         cat = f"cat gcodes/{name}.gcode | sed -n -e '/M84/,$p' | sed -e '/avoid/,$d'"
-        if len(cs) != 6:
-            print("THATS ILLEGAL:")
-            print(cs)
-        candidate = f"--rotate {str(cs[0])} --rotate-x {str(cs[1])} --rotate-y {str(cs[2])} --layer-height {str(cs[3])} --fill-pattern {patterns[cs[4]]} --duplicate {str(cs[5])}"
+        if len(cs) < 6:
+            return np.iinfo(np.int32).max
+        if (self.block_duplicates):
+            cs[5] = 1
+        candidate = f"--rotate {str(cs[0])} --rotate-x {str(cs[1])} --rotate-y {str(cs[2])} --layer-height {str(cs[3])} --fill-pattern {patterns[int(cs[4])]} --duplicate {str(cs[5])}"
         command = f"{self.slic3r_path} {self.stl_file} --gcode {candidate} --center 0,0 --align-xy 0,0 --load '{self.ini_file}' -o ./gcodes/{name}.gcode && {cat}"
         try:
             output = subprocess.check_output(
@@ -98,7 +101,7 @@ class Slicing:
                  slic3r_path='/Applications/PrusaSlicer.app/Contents/MacOS/PrusaSlicer',
                  stl_file='models/pikachu.stl',
                  ini_file='/Users/alberto/Library/Application Support/PrusaSlicer/print/Anet A8.ini',
-                 filament_kg_cost=14, kw_cost=0.052):
+                 filament_kg_cost=14, kw_cost=0.052, block_duplicates=False):
         print(f'Slicing {stl_file}')
         self.maximize = False
         self.constrained = constrained
@@ -109,6 +112,7 @@ class Slicing:
         # electricity cost per minute, assuming a 150W printer
         self.operation_cost = 1.5 * kw_cost / 60
         self.material_cost = filament_kg_cost / 300 / 1000  # 300mt ~ 1kg, cost per mm
+        self.block_duplicates = block_duplicates
 
     def evaluator(self, candidates, args):
         fitness = []
