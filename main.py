@@ -39,8 +39,16 @@ def main(prng=None, display=False):
     for model in models:
         problem = Slicing(stl_file=f'models/{model}')
         best_human = 9999
+        best_cc = []
         for c in hardcoded:
-            best_human = min(best_human, problem.slice_and_get_fit(c))
+            temp = problem.slice_and_get_fit(c)
+            if temp < best_human:
+                best_human = temp
+                best_cc = c
+        problem.slice_and_get_fit(best_cc, f'best_{model}_human')
+        with open('summaries/summary.csv', 'a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([model, 'human', best_human, best_human, 0, best_cc])
         algorithms = ['ga', 'eda', 'es']
         for algorithm in algorithms:
             for i in range(5):

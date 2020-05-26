@@ -12,14 +12,6 @@ from slicing import Slicing, hardcoded
 from evolve import evolve
 from justplot import generation_plot
 
-folder = 'gcodes/'
-for the_file in os.listdir(folder):
-    file_path = os.path.join(folder, the_file)
-    try:
-        if os.path.isfile(file_path):
-            os.unlink(file_path)
-    except Exception as e:
-        print(e)
 
 
 
@@ -43,7 +35,10 @@ def main(prng=None, display=False):
             if temp < best_human:
                 best_human = temp
                 best_cc = c
-        problem.slice_and_get_fit(best_cc, f'best_human_{model}')
+        problem.slice_and_get_fit(best_cc, f'best_human_{model}_time')
+        with open('summaries/summary_time.csv', 'a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([model, 'human', best_human, best_human, 0, best_cc])
         algorithms = ['ga', 'eda', 'es']
         for algorithm in algorithms:
             final_pop = evolve(algorithm, problem, hardcoded, prng, model=model, appendix="_time")
